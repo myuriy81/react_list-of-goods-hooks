@@ -16,100 +16,96 @@ export const goodsFromServer = [
   'Garlic',
 ];
 
-const SORT_FIELD_NAME = 'name';
-const SORT_FIELD_LANGTH = 'langth';
-
-interface Filter<T> {
-  sortField: keyof T | '';
-  reversed: boolean;
+enum SortType {
+  DEFAULT,
+  ALPHABETICAL,
+  LENGTH,
 }
 
-function gooods<T>(
+type SortParams = {
+  sortType: SortType;
+  isReversed: boolean;
+};
+
+const getSortedGoods = (
   items: string[],
-  { sortField, reversed }: Filter<T>,
-): string[] {
-  let goods = [...items];
+  { sortType, isReversed }: SortParams,
+) => {
+  const sortedList = [...items];
 
-  if (sortField) {
-    goods.sort((good1, good2) => {
-      switch (sortField) {
-        case SORT_FIELD_NAME:
-          return good1.localeCompare(good2);
-        case SORT_FIELD_LANGTH:
-          return good1.length - good2.length;
-
-        default:
-          return 0;
-      }
-    });
+  switch (sortType) {
+    case SortType.ALPHABETICAL:
+      sortedList.sort((a, b) => a.localeCompare(b));
+      break;
+    case SortType.LENGTH:
+      sortedList.sort((a, b) => a.length - b.length);
+      break;
+    default:
+      break;
   }
 
-  if (reversed) {
-    goods = goods.reverse();
-  }
-
-  return goods;
-}
+  return isReversed ? sortedList.reverse() : sortedList;
+};
 
 export const App: React.FC = () => {
-  const [sortField, setSortField] = useState('');
-  const [reversed, setReversed] = useState(false);
+  const [sortType, setSortType] = useState<SortType>(SortType.DEFAULT);
+  const [isReversed, setIsReversed] = useState(false);
 
-  const sortGoods: string[] = gooods(goodsFromServer, {
-    sortField,
-    reversed,
-  });
-
-  const reset = () => {
-    setSortField('');
-    setReversed(false);
+  const resetSortStyle = () => {
+    setSortType(SortType.DEFAULT);
+    setIsReversed(false);
   };
+
+  const sortedGoods = getSortedGoods(goodsFromServer, { sortType, isReversed });
+
+  const showResetButton = sortType !== SortType.DEFAULT || isReversed;
 
   return (
     <div className="section content">
       <div className="buttons">
         <button
-          onClick={() => setSortField(SORT_FIELD_NAME)}
           type="button"
           className={cn('button is-info', {
-            'is-light': sortField !== SORT_FIELD_NAME,
+            'is-light': sortType !== SortType.ALPHABETICAL,
           })}
+          onClick={() => setSortType(SortType.ALPHABETICAL)}
         >
           Sort alphabetically
         </button>
 
         <button
-          onClick={() => setSortField(SORT_FIELD_LANGTH)}
           type="button"
           className={cn('button is-success', {
-            'is-light': sortField !== SORT_FIELD_LANGTH,
+            'is-light': sortType !== SortType.LENGTH,
           })}
+          onClick={() => setSortType(SortType.LENGTH)}
         >
           Sort by length
         </button>
 
         <button
-          onClick={() => setReversed(!reversed)}
           type="button"
           className={cn('button is-warning', {
-            'is-light': !reversed,
+            'is-light': !isReversed,
           })}
+          onClick={() => setIsReversed(current => !current)}
         >
           Reverse
         </button>
 
-        {sortGoods.toString() !== goodsFromServer.toString() && (
+        {showResetButton && (
           <button
-            onClick={reset}
             type="button"
             className="button is-danger is-light"
+            onClick={resetSortStyle}
           >
             Reset
           </button>
         )}
       </div>
-      <ul className="GoodList">
-        {sortGoods.map(good => (
+
+      <ul>
+        {sortedGoods.map(good => (
           <li key={good} data-cy="Good">
             {good}
           </li>
